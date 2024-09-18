@@ -2,7 +2,6 @@
 #include <cstdlib>
 #include <iostream>
 #include <algorithm> 
-#include "vector"
 #include <math.h>
 using namespace std;
 
@@ -81,8 +80,8 @@ Point SillyPlayer::play(const GameView& game) {
     }
     return result;
 }
-//-----------------------------------------------------
 
+//-----------------------------------------------------
 void NewPlayer::notify(const GameView& game, const Event& event)
 {
 }
@@ -94,9 +93,8 @@ std::string NewPlayer::get_name() const
 
 Point NewPlayer::play(const GameView& game)
 {
-
     Point result{};
-    Boundary b = game.get_settings().field_size;        //первый ход в центр поля, если свободен
+    Boundary b = game.get_settings().field_size;        //РїРµСЂРІС‹Р№ С…РѕРґ РІ С†РµРЅС‚СЂ РїРѕР»СЏ, РµСЃР»Рё СЃРІРѕР±РѕРґРµРЅ
 
     int cRow = (b.min.x + b.max.x) / 2;
     int cCol = (b.min.y + b.max.y) / 2;
@@ -110,582 +108,191 @@ Point NewPlayer::play(const GameView& game)
         auto field_iterator = game.get_state().field->get_iterator();
         vector <Point> my_moves;
         vector<double> my_moves_weights(my_moves.size(), 0.0);
-        
-        //на случай если я 0 и (0,0) занято пусть будет рандомная точка с малым весом
+        Mark my = game.get_state().current_move;
+
+        //РЅР° СЃР»СѓС‡Р°Р№ РµСЃР»Рё СЏ 0 Рё (0,0) Р·Р°РЅСЏС‚Рѕ РїСѓСЃС‚СЊ Р±СѓРґРµС‚ СЂР°РЅРґРѕРјРЅР°СЏ С‚РѕС‡РєР° СЃ РјР°Р»С‹Рј РІРµСЃРѕРј
         do {
             result = {
-                .x = rand_int(b.min.x, b.max.x),
-                .y = rand_int(b.min.y, b.max.y),
+                .x = rand_int((b.min.x + 5), (b.max.x - 5)),
+                .y = rand_int((b.min.y + 5), (b.max.y - 5)),
             };
         } while (game.get_state().field->get_value(result) != Mark::None);
+
         my_moves.push_back(result);
         my_moves_weights.push_back(0.005);
-        while (field_iterator->has_value())                 // анализ точек, которые уже в поле
+        while (field_iterator->has_value())                 // Р°РЅР°Р»РёР· С‚РѕС‡РµРє, РєРѕС‚РѕСЂС‹Рµ СѓР¶Рµ РІ РїРѕР»Рµ
         {
             Point now = field_iterator->get_point();
             Mark now_mark = game.get_state().field->get_value(now);
             bool my_or_not = (now_mark == game.get_state().current_move);
              
-            int weight1 = line_analysis1(game, now, now_mark);
-            int weight2 = line_analysis2(game, now, now_mark);
-            int weight3 = line_analysis3(game, now, now_mark);
-            int weight4 = line_analysis4(game, now, now_mark);
             
-            // четверки 
-
-            if (weight1 == 4) {     // если найдена 4, то независимо от того, чея линия, закрываем
-                int dx, dy;
-                dx = dy = 1;
-                while (((now.y + dy) <= b.max.y) && (dy < 5) &&
-                    ((now.x - dx) >= b.min.x))        // северо-запад
-                {
-                    if (placeIsFree({ (now.x - dx), (now.y + dy) }, game)) {
-                        return { (now.x - dx), (now.y + dy) };
-                    }
-                    dx++;
-                    dy++;
-                };
-                dx = dy = 1;
-                while (((now.y - dy) >= b.min.y) && (dy < 5) &&
-                    ((now.x + dx) <= b.max.x))        // юго-восток
-                {
-                    if (placeIsFree({ (now.x + dx), (now.y - dy) }, game)) {
-                        return { (now.x + dx), (now.y - dy) };
-                    }
-                    dx++;
-                    dy++;
-                };
-            }
-            if (weight2 == 4) {     // если найдена 4, то независимо от того, чея линия, закрываем
-                int dy;
-                dy = 1;
-                while (((now.y + dy) <= b.max.y) && (dy < 5))        // вверх
-                {
-                    if (placeIsFree({ (now.x), (now.y + dy) }, game)) {
-                        return { (now.x), (now.y + dy) };
-                    }
-                    dy++;
-                };
-                dy = 1;
-                while (((now.y - dy) >= b.min.y) && (dy < 5))        // вниз
-                {
-                    if (placeIsFree({ (now.x), (now.y - dy) }, game)) {
-                        return { (now.x), (now.y - dy) };
-                    }
-                    dy++;
-                };
-            }
-            if (weight3 == 4) {     // если найдена 4, то независимо от того, чея линия, закрываем
-                int dx, dy;
-                dx = dy = 1;
-                while (((now.y + dy) <= b.max.y) && (dy < 5) &&
-                    ((now.x + dx) <= b.max.x))        // северо-восток
-                {
-                    if (placeIsFree({ (now.x + dx), (now.y + dy) }, game)) {
-                        return { (now.x + dx), (now.y + dy) };
-                    }
-                    dx++;
-                    dy++;
-                };
-                dx = dy = 1;
-                while (((now.y - dy) >= b.min.y) && (dy < 5) &&
-                    ((now.x - dx) >= b.min.x))        // юго-запад
-                {
-                    if (placeIsFree({ (now.x - dx), (now.y - dy) }, game)) {
-                        return { (now.x - dx), (now.y - dy) };
-                    }
-                    dx++;
-                    dy++;
-                };
-            }
-            if (weight4 == 4) {     // если найдена 4, то независимо от того, чея линия, закрываем
-                int dx;
-                dx = 1;
-                while (((now.x + dx) <= b.max.x) && (dx < 5))        // влево
-                {
-                    if (placeIsFree({ (now.x + dx), (now.y) }, game)) {
-                        return { (now.x + dx), (now.y) };
-                    }
-                    dx++;
-                };
-                dx = 1;
-                while (((now.x - dx) >= b.min.x) && (dx < 5))        // вправо
-                {
-                    if (placeIsFree({ (now.x - dx), (now.y) }, game)) {
-                        return { (now.x - dx), (now.y) };
-                    }
-                    dx++;
-                };
-            }
-
-            // тройки 
-
-            if (weight1 == 3) {
-                int dx, dy;
-                dx = dy = 1;
-                while (((now.y + dy) <= b.max.y) && (dy < 4) &&
-                    ((now.x - dx) >= b.min.x))        // северо-запад
-                {
-                    if (placeIsFree({ (now.x - dx), (now.y + dy) }, game)) {
-                        my_moves.push_back({ (now.x - dx), (now.y + dy) });
-                        if (my_or_not){ my_moves_weights.push_back(0.95); }
-                        else { my_moves_weights.push_back(0.85); }
-                        break;
-                    }
-                    dx++;
-                    dy++;
-                };
-                dx = dy = 1;
-                while (((now.y - dy) >= b.min.y) && (dy < 4) &&
-                    ((now.x + dx) <= b.max.x))        // юго-восток
-                {
-                    if (placeIsFree({ (now.x + dx), (now.y - dy) }, game)) {
-                        my_moves.push_back({ (now.x + dx), (now.y - dy) });
-                        if (my_or_not) { my_moves_weights.push_back(0.95); }
-                        else { my_moves_weights.push_back(0.85); }
-                        break;
-                    }
-                    dx++;
-                    dy++;
-                };
-            }
-            if (weight2 == 3) {
-                int dy;
-                dy = 1;
-                while (((now.y + dy) <= b.max.y) && (dy < 4))        // вверх
-                {
-                    if (placeIsFree({ (now.x), (now.y + dy) }, game)) {
-                        my_moves.push_back({ (now.x), (now.y + dy) });
-                        if (my_or_not) { my_moves_weights.push_back(0.90); }
-                        else { my_moves_weights.push_back(0.80); }
-                        break;
-                    }
-                    dy++;
-                };
-                dy = 1;
-                while (((now.y - dy) >= b.min.y) && (dy < 4))        // вниз
-                {
-                    if (placeIsFree({ (now.x), (now.y - dy) }, game)) {
-                        my_moves.push_back({ (now.x), (now.y - dy) });
-                        if (my_or_not) { my_moves_weights.push_back(0.90); }
-                        else { my_moves_weights.push_back(0.80); }
-                        break;
-                    }
-                    dy++;
-                };
-            }
-            if (weight3 == 3) {
-                int dx, dy;
-                dx = dy = 1;
-                while (((now.y + dy) <= b.max.y) && (dy < 4) &&
-                    ((now.x + dx) <= b.max.x))        // северо-восток
-                {
-                    if (placeIsFree({ (now.x + dx), (now.y + dy) }, game)) {
-                        my_moves.push_back({ (now.x + dx), (now.y + dy) });
-                        if (my_or_not) { my_moves_weights.push_back(0.90); }
-                        else { my_moves_weights.push_back(0.80); }
-                        break;
-                    }
-                    dx++;
-                    dy++;
-                };
-                dx = dy = 1;
-                while (((now.y - dy) >= b.min.y) && (dy < 4) &&
-                    ((now.x - dx) >= b.min.x))        // юго-запад
-                {
-                    if (placeIsFree({ (now.x - dx), (now.y - dy) }, game)) {
-                        my_moves.push_back({ (now.x - dx), (now.y - dy) });
-                        if (my_or_not) { my_moves_weights.push_back(0.90); }
-                        else { my_moves_weights.push_back(0.80); }
-                        break;
-                    }
-                    dx++;
-                    dy++;
-                };
-            }
-            if (weight4 == 3) {
-                int dx;
-                dx = 1;
-                while (((now.x + dx) <= b.max.x) && (dx < 4))        // влево
-                {
-                    if (placeIsFree({ (now.x + dx), (now.y) }, game)) {
-                        my_moves.push_back({ (now.x + dx), (now.y) });
-                        if (my_or_not) { my_moves_weights.push_back(0.90); }
-                        else { my_moves_weights.push_back(0.80); }
-                        break;
-                    }
-                    dx++;
-                };
-                dx = 1;
-                while (((now.x - dx) >= b.min.x) && (dx < 4))        // вправо
-                {
-                    if (placeIsFree({ (now.x - dx), (now.y) }, game)) {
-                        my_moves.push_back({ (now.x - dx), (now.y) });
-                        if (my_or_not) { my_moves_weights.push_back(0.90); }
-                        else { my_moves_weights.push_back(0.80); }
-                        break;
-                    }
-                    dx++;
-                };    
-            }
-
+            int prov1 = all_line_analysis(game, now, now_mark, -1, 1);
+            int prov2 = all_line_analysis(game, now, now_mark, 0, 1);
+            int prov3 = all_line_analysis(game, now, now_mark, 1, 1);
+            int prov4 = all_line_analysis(game, now, now_mark, -1, 0);
             
-            if (my_or_not) {    // игнорируем 2-ки и 1-чки противника
-
-                // двойки
-
-                if (weight1 == 2) {
-                    int dx, dy;
-                    dx = dy = 1;
-                    while (((now.y + dy) <= b.max.y) && (dy < 3) &&
-                        ((now.x - dx) >= b.min.x))        // северо-запад
-                    {
-                        if (placeIsFree({ (now.x - dx), (now.y + dy) }, game)) {
-                            my_moves.push_back({ (now.x - dx), (now.y + dy) });
-                            my_moves_weights.push_back(0.45);
-                            break;
-                        }
-                        dx++;
-                        dy++;
-                    };
-                    dx = dy = 1;
-                    while (((now.y - dy) >= b.min.y) && (dy < 3) &&
-                        ((now.x + dx) <= b.max.x))        // юго-восток
-                    {
-                        if (placeIsFree({ (now.x + dx), (now.y - dy) }, game)) {
-                            my_moves.push_back({ (now.x + dx), (now.y - dy) });
-                            my_moves_weights.push_back(0.45);
-                            break;
-                        }
-                        dx++;
-                        dy++;
-                    };
-                }
-                if (weight2 == 2) {
-                    int dy;
-                    dy = 1;
-                    while (((now.y + dy) <= b.max.y) && (dy < 3))        // вверх
-                    {
-                        if (placeIsFree({ (now.x), (now.y + dy) }, game)) {
-                            my_moves.push_back({ (now.x), (now.y + dy) });
-                            my_moves_weights.push_back(0.40);
-                            break;
-                        }
-                        dy++;
-                    };
-                    dy = 1;
-                    while (((now.y - dy) >= b.min.y) && (dy < 3))        // вниз
-                    {
-                        if (placeIsFree({ (now.x), (now.y - dy) }, game)) {
-                            my_moves.push_back({ (now.x), (now.y - dy) });
-                            my_moves_weights.push_back(0.40);
-                            break;
-                        }
-                        dy++;
-                    };
-                }
-                if (weight3 == 2) {
-                    int dx, dy;
-                    dx = dy = 1;
-                    while (((now.y + dy) <= b.max.y) && (dy < 3) &&
-                        ((now.x + dx) <= b.max.x))        // северо-восток
-                    {
-                        if (placeIsFree({ (now.x + dx), (now.y + dy) }, game)) {
-                            my_moves.push_back({ (now.x + dx), (now.y + dy) });
-                            my_moves_weights.push_back(0.40);
-                            break;
-                        }
-                        dx++;
-                        dy++;
-                    };
-                    dx = dy = 1;
-                    while (((now.y - dy) >= b.min.y) && (dy < 3) &&
-                        ((now.x - dx) >= b.min.x))        // юго-запад
-                    {
-                        if (placeIsFree({ (now.x - dx), (now.y - dy) }, game)) {
-                            my_moves.push_back({ (now.x - dx), (now.y - dy) });
-                            my_moves_weights.push_back(0.40);
-                            break;
-                        }
-                        dx++;
-                        dy++;
-                    };
-                }
-                if (weight4 == 2) {
-                    int dx;
-                    dx = 1;
-                    while (((now.x + dx) <= b.max.x) && (dx < 3))        // влево
-                    {
-                        if (placeIsFree({ (now.x + dx), (now.y) }, game)) {
-                            my_moves.push_back({ (now.x + dx), (now.y) });
-                            my_moves_weights.push_back(0.40);
-                            break;
-                        }
-                        dx++;
-                    };
-                    dx = 1;
-                    while (((now.x - dx) >= b.min.x) && (dx < 3))        // вправо
-                    {
-                        if (placeIsFree({ (now.x - dx), (now.y) }, game)) {
-                            my_moves.push_back({ (now.x - dx), (now.y) });
-                            my_moves_weights.push_back(0.40);
-                            break;
-                        }
-                        dx++;
-                    };
-                }
-
-                // единички 
-
-                if (weight1 == 1) {
-                    int dx, dy;
-                    dx = dy = 1;
-                    while (((now.y + dy) <= b.max.y) && (dy < 2) &&
-                        ((now.x - dx) >= b.min.x))        // северо-запад
-                    {
-                        if (placeIsFree({ (now.x - dx), (now.y + dy) }, game)) {
-                            my_moves.push_back({ (now.x - dx), (now.y + dy) });
-                            my_moves_weights.push_back(0.15);
-                            break;
-                        }
-                        dx++;
-                        dy++;
-                    };
-                    dx = dy = 1;
-                    while (((now.y - dy) >= b.min.y) && (dy < 2) &&
-                        ((now.x + dx) <= b.max.x))        // юго-восток
-                    {
-                        if (placeIsFree({ (now.x + dx), (now.y - dy) }, game)) {
-                            my_moves.push_back({ (now.x + dx), (now.y - dy) });
-                            my_moves_weights.push_back(0.15);
-                            break;
-                        }
-                        dx++;
-                        dy++;
-                    };
-                }
-                if (weight2 == 1) {
-                    int dy;
-                    dy = 1;
-                    while (((now.y + dy) <= b.max.y) && (dy < 2))        // вверх
-                    {
-                        if (placeIsFree({ (now.x), (now.y + dy) }, game)) {
-                            my_moves.push_back({ (now.x), (now.y + dy) });
-                            my_moves_weights.push_back(0.10);
-                            break;
-                        }
-                        dy++;
-                    };
-                    dy = 1;
-                    while (((now.y - dy) >= b.min.y) && (dy < 2))        // вниз
-                    {
-                        if (placeIsFree({ (now.x), (now.y - dy) }, game)) {
-                            my_moves.push_back({ (now.x), (now.y - dy) });
-                            my_moves_weights.push_back(0.10);
-                            break;
-                        }
-                        dy++;
-                    };
-                }
-                if (weight3 == 1) {
-                    int dx, dy;
-                    dx = dy = 1;
-                    while (((now.y + dy) <= b.max.y) && (dy < 2) &&
-                        ((now.x + dx) <= b.max.x))        // северо-восток
-                    {
-                        if (placeIsFree({ (now.x + dx), (now.y + dy) }, game)) {
-                            my_moves.push_back({ (now.x + dx), (now.y + dy) });
-                            my_moves_weights.push_back(0.10);
-                            break;
-                        }
-                        dx++;
-                        dy++;
-                    };
-                    dx = dy = 1;
-                    while (((now.y - dy) >= b.min.y) && (dy < 2) &&
-                        ((now.x - dx) >= b.min.x))        // юго-запад
-                    {
-                        if (placeIsFree({ (now.x - dx), (now.y - dy) }, game)) {
-                            my_moves.push_back({ (now.x - dx), (now.y - dy) });
-                            my_moves_weights.push_back(0.10);
-                            break;
-                        }
-                        dx++;
-                        dy++;
-                    };
-                }
-                if (weight4 == 1) {
-                    int dx;
-                    dx = 1;
-                    while (((now.x + dx) <= b.max.x) && (dx < 2))        // влево
-                    {
-                        if (placeIsFree({ (now.x + dx), (now.y) }, game)) {
-                            my_moves.push_back({ (now.x + dx), (now.y) });
-                            my_moves_weights.push_back(0.10);
-                            break;
-                        }
-                        dx++;
-                    };
-                    dx = 1;
-                    while (((now.x - dx) >= b.min.x) && (dx < 2))        // вправо
-                    {
-                        if (placeIsFree({ (now.x - dx), (now.y) }, game)) {
-                            my_moves.push_back({ (now.x - dx), (now.y) });
-                            my_moves_weights.push_back(0.10);
-                            break;
-                        }
-                        dx++;
-                    };
-                }
-            }
-
+            line_checker(game, now, prov1, -1, 1, my_moves, my, now_mark, my_moves_weights);
+            line_checker(game, now, prov2, 0, 1, my_moves, my, now_mark, my_moves_weights);
+            line_checker(game, now, prov3, 1, 1, my_moves, my, now_mark, my_moves_weights);
+            line_checker(game, now, prov4, -1, 0, my_moves, my, now_mark, my_moves_weights);
+           
             field_iterator->step();
         }
-        double maxw = -1.0;
-        int maxw_index = -1;
-        for (int i = 0; i < my_moves_weights.size(); i++) {
-            if (my_moves_weights[i] > maxw) {
-                maxw = my_moves_weights[i];
-                maxw_index = i;
-            }
-        }
-        result = my_moves[maxw_index];
+        result = my_moves[find_max_index(my_moves_weights)];
         return result;
-
     }
 }
 
-int NewPlayer::line_analysis1(const GameView& game, const Point& point, Mark now_mark) //диагональ (слева-сверху->снизу-справа)
+int NewPlayer::all_line_analysis(const GameView& game, const Point& point, Mark now_mark, int dx, int dy)
 {
     int count = 1;
-    int dx, dy;
-    dx = dy = 1;
-    while (((point.y + dy) <= game.get_settings().field_size.max.y) && (dy < 5) &&
-        ((point.x - dx) >= game.get_settings().field_size.min.x))        // северо-запад
-    {
-        if (placeIsMy({ (point.x - dx), (point.y + dy) }, game, now_mark)) {
-            count += 1;
-        }
-        else
-        {
-            break;
-        }
-        dy++;
-        dx++;
-    }
-    dy = dx = 1;
-    while (((point.y - dy) >= game.get_settings().field_size.min.y) && (dy < 5) && 
-        ((point.x + dx) <= game.get_settings().field_size.max.x))        // юго-восток
-    {
-        if (placeIsMy({ (point.x + dx), (point.y - dy) }, game, now_mark)) {
-            count += 1;
-        }
-        else {
-            break;
-        }
-        dy++;
-        dx++;
-    }
-    return count;    
-}
 
-int NewPlayer::line_analysis2(const GameView& game, const Point& point, Mark now_mark)      // вертикаль
-{
-    int count = 1;
-    int dx, dy;
-    dx = dy = 1;
-    while (((point.y + dy) <= game.get_settings().field_size.max.y) && (dy < 5))        // вверх
+    int granminx = game.get_settings().field_size.min.x;
+    int granmaxx = game.get_settings().field_size.max.x;
+    int granminy = game.get_settings().field_size.min.y;
+    int granmaxy = game.get_settings().field_size.max.y;
+    
+    int new_dx, new_dy;
+    new_dx = new_dy = 0;
+    new_dx += dx;
+    new_dy += dy;
+    
+    while (if_for_while(new_dx, new_dy, point, granmaxx, granminx, granmaxy, granminy, 5))
     {
-        if (placeIsMy({ (point.x), (point.y + dy) }, game, now_mark)) {            
+        if (placeIsMy({ (point.x + new_dx), (point.y + new_dy) }, game, now_mark)) {
             count += 1;
         }
-        else
-        {
-            break;
-        }
-        dy++;
+        else { break; }
+        new_dx += dx;
+        new_dy += dy;
     }
-    dy = 1;
-    while (((point.y - dy) >= game.get_settings().field_size.min.y) && (dy < 5))        // вниз
+    new_dx = new_dy = 0;
+    new_dx -= dx;
+    new_dy -= dy;
+
+    while (if_for_while(new_dx, new_dy, point, granmaxx, granminx, granmaxy, granminy, 5))
     {
-        if (placeIsMy({ (point.x), (point.y - dy) }, game, now_mark)) {            
+        if (placeIsMy({ (point.x + new_dx), (point.y + new_dy) }, game, now_mark)) {
             count += 1;
         }
-        else {
-            break;
-        }
-        dy++;
+        else { return count; }
+        new_dx -= dx;
+        new_dy -= dy;
     }
     return count;
 }
 
-int NewPlayer::line_analysis3(const GameView& game, const Point& point, Mark now_mark)      //диагональ (справа-сверху->снизу-слева)
+void NewPlayer::line_checker(const GameView& game, const Point& point, int col, int dx, int dy, vector <Point>& my_moves,
+    Mark my, Mark now, vector<double>& my_moves_weights)
 {
-    int count = 1;
-    int dx, dy;
-    dx = dy = 1;
-    while (((point.y + dy) <= game.get_settings().field_size.max.y) && (dy < 5) &&
-        ((point.x + dx) <= game.get_settings().field_size.max.x))        // северо-восток
-    {
-        if (placeIsMy({ (point.x + dx), (point.y + dy) }, game, now_mark)) {
-            count += 1;
-        }
-        else
-        {
-            break;
-        }
-        dy++;
-        dx++;
+    if ((col == 4) || (col == 3) || (col == 2)) { 
+        nearest_one(game, point, dx, dy, col, my_moves, my_moves_weights, (my == now));
     }
-    dy = dx = 1;
-    while (((point.y - dy) >= game.get_settings().field_size.min.y) && (dy < 5) && 
-        ((point.x - dx) >= game.get_settings().field_size.min.x))        // юго-запад
-    {
-        if (placeIsMy({ (point.x - dx), (point.y - dy) }, game, now_mark)) {
-            count += 1;
+
+    if (my == now) {
+        if (col == 1) {
+            nearest_one(game, point, dx, dy, col, my_moves, my_moves_weights, (my == now));
         }
-        else {
-            break;
-        }
-        dy++;
-        dx++;
     }
-    return count;
 }
 
-int NewPlayer::line_analysis4(const GameView& game, const Point& point, Mark now_mark)
+void NewPlayer::nearest_one(const GameView& game, const Point& point, int dx, int dy, int my_i, vector <Point>& my_moves,
+    vector<double>& my_moves_weights, bool my_or_not)
 {
-    int count = 1;
-    int dx, dy;
-    dx = dy = 1;
-    while (((point.x + dx) <= game.get_settings().field_size.max.x) && (dx < 5))        // влево
+    int granminx = game.get_settings().field_size.min.x;
+    int granmaxx = game.get_settings().field_size.max.x;
+    int granminy = game.get_settings().field_size.min.y;
+    int granmaxy = game.get_settings().field_size.max.y;
+    
+    Mark my = game.get_state().current_move;
+
+    bool mainline = ((dx == -1) && (dy == 1)) ? true : false;
+    int new_dx, new_dy;
+    new_dx = new_dy = 0;
+    new_dx += dx;
+    new_dy += dy;
+    while (if_for_while(new_dx, new_dy, point, granmaxx, granminx, granmaxy, granminy, my_i))
     {
-        if (placeIsMy({ (point.x + dx), (point.y) }, game, now_mark)) {
-            count += 1;
-        }
-        else
-        {
+        if (placeIsMy({ (point.x + new_dx), (point.y + new_dy) }, game, my)) {
             break;
         }
-        dx++;
+        if (placeIsFree({ (point.x + new_dx), (point.y + new_dy) }, game)) {
+            my_moves.push_back({ (point.x + new_dx), (point.y + new_dy) });
+            calculated(my_i, my_moves_weights, my_or_not, mainline);
+        }
+        new_dx += dx;
+        new_dy += dy;
     }
-    dx = 1;
-    while (((point.x - dx) >= game.get_settings().field_size.min.x) && (dx < 5))        // вправо
+    new_dx = new_dy = 0;
+    new_dx -= dx;
+    new_dy -= dy;
+    while (if_for_while(new_dx, new_dy, point, granmaxx, granminx, granmaxy, granminy, my_i))
     {
-        if (placeIsMy({ (point.x - dx), (point.y) }, game, now_mark)) {
-            count += 1;
+        if (placeIsMy({ (point.x + new_dx), (point.y + new_dy) }, game, my)) {
+            return;
         }
-        else {
-            break;
+        if (placeIsFree({ (point.x + new_dx), (point.y + new_dy) }, game)) {
+            my_moves.push_back({ (point.x + new_dx), (point.y + new_dy) });
+            calculated(my_i, my_moves_weights, my_or_not, mainline);
         }
-        dx++;
+        new_dx -= dx;
+        new_dy -= dy;
     }
-    return count;
 }
 
-bool NewPlayer::insideField(const Point& point, const Boundary& b)
+void NewPlayer::calculated(int my_i, std::vector<double>& my_moves_weights, bool my_or_not, bool mainline)
 {
-    return (point.x >= b.min.x && point.y >= b.min.y && point.x <= b.max.x && point.y >= b.max.y);
+    if ((my_i == 4) && my_or_not) {
+        my_moves_weights.push_back(1.0);
+        return;
+    }
+    if ((my_i == 4) && !(my_or_not)) {
+        my_moves_weights.push_back(0.95);
+        return;
+    }
+    if ((my_i == 3) && my_or_not) {
+        mainline ? my_moves_weights.push_back(0.85) : my_moves_weights.push_back(0.80);
+        return;
+    }
+    if ((my_i == 3) && !(my_or_not)) {
+        mainline ? my_moves_weights.push_back(0.75) : my_moves_weights.push_back(0.70);
+        return;
+    }
+    if ((my_i == 2) && my_or_not) {
+        mainline ? my_moves_weights.push_back(0.45) : my_moves_weights.push_back(0.40);
+        return;
+    }
+    if ((my_i == 2) && !(my_or_not)) {
+        mainline ? my_moves_weights.push_back(0.35) : my_moves_weights.push_back(0.30);
+        return;
+    }
+    if ((my_i == 1) && my_or_not) {
+        mainline ? my_moves_weights.push_back(0.25) : my_moves_weights.push_back(0.20);
+        return;
+    }
+}
+
+bool NewPlayer::if_for_while(int new_dx, int new_dy, const Point& point, int granmaxx, int granminx, int granmaxy, int granminy, int my_i)
+{
+    return (
+        ((point.x + new_dx) <= granmaxx) && ((abs(new_dx) < (my_i + 1)) || (abs(new_dy) < (my_i + 1)))
+        && ((point.x + new_dx) >= granminx) && ((point.y + new_dy) >= granminy)
+        && ((point.y + new_dy) <= granmaxy)
+        );
+}
+
+int NewPlayer::find_max_index(std::vector<double>& my_moves_weights)
+{
+    double maxw = -1.0;
+    int maxw_index = -1;
+    for (int i = 0; i < my_moves_weights.size(); i++) {
+        if (my_moves_weights[i] > maxw) {
+            maxw = my_moves_weights[i];
+            maxw_index = i;
+        }
+    }
+    return maxw_index;
 }
 
 bool NewPlayer::placeIsFree(const Point& point, const GameView& game)
@@ -695,6 +302,11 @@ bool NewPlayer::placeIsFree(const Point& point, const GameView& game)
 
 bool NewPlayer::placeIsMy(const Point& point, const GameView& game, Mark mark)
 {
-    return game.get_state().field->get_value(point) == mark;
+    if (mark == Mark::Cross) {
+        return (int)game.get_state().field->get_value(point) == 1;
+    }
+    return (int)game.get_state().field->get_value(point) == 0; 
 }
 //-----------------------------------------------------
+// Р±С‹Р»Рѕ 630 СЃС‚СЂРѕС‡РµРє РєРѕРґР°, СЃС‚Р°Р»Рѕ 227.
+//С„СѓРЅРєС†РёСЏ play Р·Р°РЅРёРјР°РµС‚ С‚РµРїРµСЂСЊ 52 СЃС‚СЂРѕС‡РµРє (РґРѕР»Р¶РµРЅ Р±С‹Р» СѓР»РѕР¶РёС‚СЊСЃСЏ РІ 100).
