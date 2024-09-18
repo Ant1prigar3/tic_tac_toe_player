@@ -1,6 +1,6 @@
 #pragma once
 #include <ostream>
-#include <vector>
+#include "vector"
 #include "player.h"
 
 
@@ -45,24 +45,26 @@ public:
 
 class NewPlayer : public Player
 {
-    std::string _name;      // имя игрока
+    std::string _name;      // РёРјСЏ РёРіСЂРѕРєР°
 
 public:
 
-    NewPlayer(const std::string& name) : _name(name) {}                     // конструктор
+    NewPlayer(const std::string& name) : _name(name) {}                     // РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ
     virtual void notify(const GameView& game, const Event& event) override;
-    virtual std::string get_name() const override;                  // получение имени
+    virtual std::string get_name() const override;                  // РїРѕР»СѓС‡РµРЅРёРµ РёРјРµРЅРё
     virtual void assign_mark(Mark player_mark) override {};
-    virtual Point play(const GameView& game) override;              //перебираем ходы и выбираем лучший.
+    virtual Point play(const GameView& game) override;              //РїРµСЂРµР±РёСЂР°РµРј С…РѕРґС‹ Рё РІС‹Р±РёСЂР°РµРј Р»СѓС‡С€РёР№.
 
-    int line_analysis1(const GameView& game, const Point& point, Mark now_mark); //проверка по линиям (диагональ1).сделано
-    int line_analysis2(const GameView& game, const Point& point, Mark now_mark); //проверка по линиям (вертикаль).сделано
-    int line_analysis3(const GameView& game, const Point& point, Mark now_mark); //проверка по линиям (диагональ2).сделано 
-    int line_analysis4(const GameView& game, const Point& point, Mark now_mark); //проверка по линиям (горизонталь).сделано
-    
-    bool insideField(const Point& point, const Boundary& b);        //проверка, что ход выбран внутри поля. сделано но хз зачем
-    bool placeIsFree(const Point& point, const GameView& game);     //проверка, что место свободно.сделано
-    bool placeIsMy(const Point& point, const GameView& game, Mark mark);       //проверка, что поле занято мной. сделано
+    int all_line_analysis(const GameView& game, const Point& point, Mark now_mark, int dx, int dy);
+    void line_checker(const GameView& game, const Point& point, int col, int dx, int dy, std::vector<Point>& my_moves,
+        Mark my, Mark now, std::vector<double>& my_moves_weights);
+    void nearest_one(const GameView& game, const Point& point, int dx, int dy, int my_i, std::vector <Point>& my_moves,
+        std::vector<double>& my_moves_weights, bool my_or_not);
+    void calculated(int my_i, std::vector<double>& my_moves_weights, bool my_or_not, bool mainline);
+    bool if_for_while(int new_dx, int new_dy, const Point& point, int granmaxx, int granminx, int granmaxy, int granminy, int my_i);
+    int find_max_index(std::vector<double>& my_moves_weights);
+    bool placeIsFree(const Point& point, const GameView& game);     //РїСЂРѕРІРµСЂРєР°, С‡С‚Рѕ РјРµСЃС‚Рѕ СЃРІРѕР±РѕРґРЅРѕ.
+    bool placeIsMy(const Point& point, const GameView& game, Mark mark);       //РїСЂРѕРІРµСЂРєР°, С‡С‚Рѕ РїРѕР»Рµ Р·Р°РЅСЏС‚Рѕ РјРЅРѕР№.
 };
 
 //-----------------------------------------------------
